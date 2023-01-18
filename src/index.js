@@ -17,8 +17,9 @@ class Board extends React.Component {
     super(props)
 
     this.state = {
-      cells: Array.from({length: 6}, () => Array(7).fill('white')),
-      isRed: true
+      cells: Array.from({ length: ROWS }, () => Array(COLS).fill('white')),
+      isRed: true,
+      statusLabel: 'Red next'
     };
   }
   render() {
@@ -27,44 +28,159 @@ class Board extends React.Component {
     for (let row = 0; row < ROWS; row++) {
       const cols = [];
       for (let col = 0; col < COLS; col++) {
-        cols.push(<Square key={`cell-${row}-${col}`} i={row} j={col} color={this.state.cells[row][col]} onClick={() => this.handleClick(row, col)}/>);
+        cols.push(<Square key={`cell-${row}-${col}`} i={row} j={col} color={this.state.cells[row][col]} onClick={() => this.handleClick(row, col)} />);
       }
       rows.push(<tr key={`row-${row}`}>{cols}</tr>);
     }
 
     return (
-      <table>
-        <tbody>{rows}</tbody>
-      </table>
+      <div>
+        <table>
+          <tbody>{rows}</tbody>
+        </table>
+        <h3>{this.state.statusLabel}</h3>
+      </div>
     );
   }
 
-  handleClick(row, col)
-  {
-    console.log("hola");
+  findLowestAvailableCell(col) {
+    for (let i = ROWS - 1; i >= 0; i--) {
+      if (this.state.cells[i][col] == 'white') {
+        return i;
+      }
+    }
 
+    return -1;
+  }
+
+  checkDownDiagonal(row, col) {
+    let count = 1;
+
+
+    const cells = this.state.cells;
+    let color = cells[row][col];
+
+    for (let i = 1; i < 4; i++) {
+      if (row + i >= ROWS || col + i >= COLS || cells[row + i][col + i] !== color) {
+        break;
+      }
+      count++;
+    }
+
+    for (let i = 1; i < 4; i++) {
+      if (row - i < 0 || col - i < 0 || cells[row - i][col - i] !== color) {
+        break;
+      }
+      count++;
+    }
+
+    return count >= 4;
+  }
+
+  checkUpDiagonal(row, col) {
+    let count = 1;
+    const cells = this.state.cells;
+    const color = cells[row][col];
+
+    for (let i = 0; i < 4; i++) {
+      if (row - i < 0 || col + i >= COLS || cells[row - i][col + i] !== color) {
+        break;
+      }
+      count++;
+    }
+
+    for (let i = 0; i < 4; i++) {
+      if (row + i >= ROWS || col - i < 0 || cells[row + i][col - i] !== color) {
+        break;
+      }
+      count++;
+    }
+
+    return count >= 4;
+  }
+
+  checkHorizontal(row, col) {
+    let count = 1;
+    const cells = this.state.cells;
+    const color = cells[row][col];
+
+    for (let i = 1; i < 4; i++) {
+      if (col + i >= COLS || cells[row][col + i] !== color) {
+        break;
+      }
+      count++;
+    }
+
+    for (let i = 1; i < 4; i++) {
+      if (col + i >= COLS || cells[row][col - i] !== color) {
+        break;
+      }
+      count++;
+    }
+
+    return count >= 4;
+  }
+
+  checkVertical(row, col) {
+    const cells = this.state.cells;
+    const color = cells[row][col];
+
+    let count = 1;
+
+    for (let i = 1; i < 4 && row + i < ROWS; i++) {
+      if (cells[row + i][col] !== color) {
+        break;
+      }
+      count++;
+    }
+
+    for (let i = 1; i < 4 && row - i >= 0; i++) {
+      if (cells[row - i][col] !== color) {
+        break;
+      }
+      count++;
+    }
+
+    return count >= 4;
+
+  }
+
+  handleClick(row, col) {
     let newCells = this.state.cells.slice();
 
-    for(let i = 0; i < newCells.length; i++)
+    row = this.findLowestAvailableCell(col);
+
+    if (row === -1) return;
+
+    newCells[row][col] = this.state.isRed ? 'red' : 'black';
+
+    const checkWin = this.checkUpDiagonal(row, col) ||
+      this.checkDownDiagonal(row, col) ||
+      this.checkHorizontal(row, col) ||
+      this.checkVertical(row, col)
+
+    
+    let newStatusLabel;
+
+    if(checkWin)
     {
-      for(let j = 0; j < newCells[0].length; j++)
-      {
-        if(i === row && j === col)
-        {
-          newCells[i][j] = this.state.isRed ? 'red' : 'black';
-        }
-      }
+      newStatusLabel = this.state.isRed ? 'Red won!' : 'Black won!'
+    }
+    else
+    {
+      newStatusLabel = this.state.isRed ? 'Black next' : 'Red won';
     }
 
     this.setState({
       cells: newCells,
-      isRed: !this.state.isRed
+      isRed: !this.state.isRed,
+      statusLabel: newStatusLabel
     });
+
+
   }
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(<Board />)
-
-let test = Array.from({length: 5}, _ => (Array.from({length: 6}, )));
